@@ -8,4 +8,4 @@ editor_options:
   chunk_output_type: console
 ---
 
-This repository was created to learn how to access and open a database files downloaded from the Fieldbook data collection application.
+This SOP was created to learn how to access and open a database files downloaded from the Fieldbook data collection application.
