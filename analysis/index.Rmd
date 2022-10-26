@@ -3,9 +3,9 @@ title: "Home"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
-    toc: false
+    toc: true
 editor_options:
   chunk_output_type: console
 ---
 
-Welcome to my research website.
+This repository was created to learn how to access and open a database files downloaded from the Fieldbook data collection application.

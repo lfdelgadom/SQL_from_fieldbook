@@ -1,0 +1,127 @@
+---
+title: "SOP - How to open a db file from fieldbook app"
+author: "Luis Fernando Delgado Munoz"
+date: "2022-10-26"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: inline
+---
+
+# How to open a database (.db) file with R language  
+
+Sometimes we may have problems when exporting our data; the phone crashes for multiple reasons such as high temperature, excessive dust or even falling into a flooding in the field. Fortunately, constantly the app is backing the data up, and that data can be found in a folder called database. To get more information about how to access to different folders you can read [The Fieldbook official manual](https://excellenceinbreeding.org/sites/default/files/manual/field_book_manual_v3.pdf)
+
+
+Once we have the .db file available, we will be ready for its reading and reshaping. We need to be sure to place the file in the same folder of the project. For this instance, the name file is **backup.db** 
+
+## Loading libraries
+
+```{r load_libraries}
+# install.packages(pacman)
+library(pacman)
+pacman::p_load("dbplyr", "RSQLite", "tidyverse", "magrittr", "openxlsx")
+```
+
+## Connect to the data base 
+
+```{r connect}
+db <- DBI::dbConnect(RSQLite::SQLite(), "data/backup.db")
+```
+
+The previus command uses 2 packages that helps dbplyr and dplyr (included in tidyverse) talk to the SQLite database. DBI is not something that you’ll use directly as a user. It allows R to send commands to databases irrespective of the database management system used. The RSQLite package allows R to interface with SQLite databases.
+
+This command does not load the data into the R session (as the read_csv() function did). Instead, it merely instructs R to connect to the SQLite database.
+
+Using a similar approach, we could connect to many other database management systems that are supported by R including MySQL, PostgreSQL, BigQuery, etc
+
+Let’s take a closer look at the db database we just we connected to:
+
+```{r}
+src_dbi(db)
+```
+
+Just like a spreadsheet with multiple worksheets, a SQLite database can contain multiple tables. In this case seventeen of them are listed in the tbls row in the output above:
+
+1. android_metadata 
+2. LocalImageObservations 
+3. NonImageObservations
+4. observation_units 
+5. observation_units_attributes
+6. observation_units_values  
+7. observation_variable_attributes
+8. observation_variable_values 
+9. observation_variables 
+10. observations
+11. ObservationUnitProperty 
+12. plot_attributes 
+13. plot_values
+14. RemoteImageObservationsView 
+15. sqlite_sequence 
+16. studies
+17. VisibleObservationVariable
+
+Now that we know we can connect to the database, let’s explore how to get the data from its tables into R
+
+## Querying the database with the dplyr syntax
+
+One of the strengths of dplyr is that the same operation can be done using dplyr’s verbs instead of writing SQL. First, we select the table on which to do the operations by creating the **observations** object, and then we use the standard dplyr syntax as if it were a data frame:
+
+```{r}
+observations <- tbl(db, "observations") 
+observations <- observations %>% 
+  select(observation_unit_id, observation_variable_name, value, collector)
+observations %>% head()
+```
+
+In this case, the **observation** object behaves like a data frame. Several functions that can be used with data frames can also be used on tables from a database
+
+## Reshape dataframe
+
+Now we need to reshape the **observation** object (data frame). The column 
+**observation_variable_name** has to be reshape from longer to wider, thus there will be one column per each variable
+
+```{r}
+obs_wide <- observations %>% 
+  mutate(trial_name = substring(observation_unit_id, 1, 16)) %>% 
+  pivot_wider(names_from = observation_variable_name, 
+              values_from = value) 
+
+obs_wide %>% head()
+```
+
+## Check the trial_names 
+
+```{r}
+trial_names <- obs_wide %>% distinct(trial_name) %>% pull()
+trial_names
+```
+
+## create the master data to save the trials (list)
+
+```{r}
+master_data = list()
+```
+
+# Save the historical trials into the master data
+
+```{r}
+for (i in trial_names) {
+  datos <- obs_wide %>% filter(trial_name == i)
+  master_data[[i]] = datos
+}
+```
+
+
+# Save all trials in local folder
+
+```{r}
+#folder = getwd()
+#folder = "D:\\OneDrive - CGIAR\\Data Analysis\\SQL\\"
+agronomist = "jorge_ivan"
+
+meta_file_name = paste(paste("01_",agronomist, "_.db_data_",
+                                     Sys.Date(),".xlsx", sep = ""),
+                       sep = "")
+#write.xlsx(master_data, file = here::here("output", meta_file_name))
+```
+
