@@ -1,5 +1,5 @@
 ---
-title: "SOP - How to open a db file from fieldbook app"
+title: "SOP"
 author: "Luis Fernando Delgado Munoz"
 date: "2022-10-26"
 output: workflowr::wflow_html
@@ -111,8 +111,7 @@ for (i in trial_names) {
 }
 ```
 
-
-# Save all trials in local folder
+## Save all trials in local folder
 
 ```{r}
 #folder = getwd()
